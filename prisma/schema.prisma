@@ -1,0 +1,139 @@
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  // Imports en .ts : le script de remplissage tourne avec `node` seul (types retirés à la volée).
+  importFileExtension = "ts"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Tables d'Auth.js (lien magique). `name` sert de pseudo.
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  accounts      Account[]
+  sessions      Session[]
+  jeuxProposes  Game[]
+  epingles      Pin[]
+  resultats     Result[]
+  clans         ClanMember[]
+}
+
+model Clan {
+  id          String       @id @default(cuid())
+  nom         String
+  // Code d'invitation, régénérable par le fondateur.
+  code        String       @unique
+  // Pas de clé étrangère : si le fondateur part, le membre le plus ancien reprend le clan.
+  fondateurId String
+  createdAt   DateTime     @default(now())
+  membres     ClanMember[]
+}
+
+model ClanMember {
+  clanId    String
+  userId    String
+  createdAt DateTime @default(now())
+  clan      Clan     @relation(fields: [clanId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([clanId, userId])
+  @@index([userId])
+}
+
+enum Categorie {
+  MOTS
+  GEO
+  CHIFFRES
+  CULTURE
+  AUTRES
+}
+
+model Game {
+  id             String    @id @default(cuid())
+  slug           String    @unique
+  nom            String
+  url            String
+  // Hôte sans www + chemin sans / final : sert à refuser les doublons.
+  urlCle         String    @unique
+  description    String
+  categorie      Categorie
+  langue         String
+  renouvellement String    @default("à minuit")
+  createdAt      DateTime  @default(now())
+  auteurId       String?
+  auteur         User?     @relation(fields: [auteurId], references: [id], onDelete: SetNull)
+  epingles       Pin[]
+  resultats      Result[]
+
+  @@index([categorie])
+}
+
+// Un jeu épinglé à la routine d'un joueur.
+model Pin {
+  userId    String
+  gameId    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game      Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@id([userId, gameId])
+}
+
+// Un jeu joué un jour donné : une seule ligne par joueur, jeu et jour.
+model Result {
+  id        String   @id @default(cuid())
+  userId    String
+  gameId    String
+  // AAAA-MM-JJ, heure de Paris.
+  jour      String
+  // Score déclaré ; reussi vide = jeu coché sans score.
+  reussi    Boolean?
+  essais    Int?
+  essaisMax Int?
+  points    Int      @default(0)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game      Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, gameId, jour])
+  @@index([userId, jour])
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}

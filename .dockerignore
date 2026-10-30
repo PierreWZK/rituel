@@ -1,0 +1,7 @@
+node_modules
+.next
+.env
+.claude
+src/generated
+*.tsbuildinfo
+docs/maquettes

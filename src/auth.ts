@@ -11,7 +11,7 @@ async function envoyerLien({ identifier, url }: { identifier: string; url: strin
   }
   // Envoi en arrière-plan : la page « lien envoyé » s'affiche sans attendre le serveur SMTP.
   // shortcut: un échec d'envoi n'apparaît que dans les journaux, passer par une file d'envoi s'il faut le signaler.
-  createTransport(process.env.EMAIL_SERVER, { connectionTimeout: 10_000, greetingTimeout: 10_000 })
+  createTransport(process.env.EMAIL_SERVER)
     .sendMail({
       to: identifier,
       from: process.env.EMAIL_FROM,

@@ -9,12 +9,16 @@ async function envoyerLien({ identifier, url }: { identifier: string; url: strin
     console.log(`\n🔗 Lien de connexion pour ${identifier} :\n${url}\n`);
     return;
   }
-  await createTransport(process.env.EMAIL_SERVER).sendMail({
-    to: identifier,
-    from: process.env.EMAIL_FROM,
-    subject: "Votre lien de connexion à Rituel",
-    text: `Bonjour,\n\nPour vous connecter à Rituel, ouvrez ce lien (valable 15 minutes) :\n${url}\n\nSi vous n'avez rien demandé, ignorez ce message.`,
-  });
+  // Envoi en arrière-plan : la page « lien envoyé » s'affiche sans attendre le serveur SMTP.
+  // shortcut: un échec d'envoi n'apparaît que dans les journaux, passer par une file d'envoi s'il faut le signaler.
+  createTransport(process.env.EMAIL_SERVER)
+    .sendMail({
+      to: identifier,
+      from: process.env.EMAIL_FROM,
+      subject: "Votre lien de connexion à Rituel",
+      text: `Bonjour,\n\nPour vous connecter à Rituel, ouvrez ce lien (valable 15 minutes) :\n${url}\n\nSi vous n'avez rien demandé, ignorez ce message.`,
+    })
+    .catch((e) => console.error("[mail] lien non envoyé :", e.message));
 }
 
 // Fournisseur e-mail maison : Auth.js n'appelle pas nodemailer lui-même, on utilise la version corrigée installée.

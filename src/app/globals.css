@@ -259,6 +259,51 @@ button.bouton {
   margin-top: 8px;
 }
 
+.formulaire small {
+  color: var(--sauge);
+  font-size: 13px;
+}
+
+.formulaire .option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  cursor: pointer;
+}
+
+.connexion-autre {
+  margin-top: 16px;
+}
+
+.connexion-autre a {
+  color: var(--menthe);
+}
+
+.connexion-mail {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--verre-bord);
+}
+
+.connexion-mail summary {
+  cursor: pointer;
+  color: var(--sauge);
+}
+
+.profil-titre {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--verre-bord);
+  font: 600 20px var(--police-titre);
+}
+
+.option input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--menthe);
+}
+
 .message {
   padding: 12px 16px;
   border-radius: var(--rayon-s);

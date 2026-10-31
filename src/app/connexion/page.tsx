@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { AuthError } from "next-auth";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth, signIn } from "@/auth";
 import { autoriser } from "@/lib/limite";
@@ -13,6 +15,22 @@ function suiteSure(valeur: unknown): string {
   return /^\/(?![/\\])/.test(suite) ? suite : "/";
 }
 
+async function seConnecter(formData: FormData) {
+  "use server";
+  const suite = suiteSure(formData.get("suite"));
+  try {
+    await signIn("motdepasse", {
+      pseudo: String(formData.get("pseudo") ?? ""),
+      motDePasse: String(formData.get("motDePasse") ?? ""),
+      redirectTo: suite,
+    });
+  } catch (e) {
+    // signIn signale un échec par une AuthError ; la redirection réussie, elle, doit remonter.
+    if (e instanceof AuthError) redirect(`/connexion?erreur=identifiants&suite=${encodeURIComponent(suite)}`);
+    throw e;
+  }
+}
+
 async function demanderLien(formData: FormData) {
   "use server";
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
@@ -22,6 +40,7 @@ async function demanderLien(formData: FormData) {
 }
 
 const ERREURS: Record<string, string> = {
+  identifiants: "Pseudo ou mot de passe incorrect.",
   email: "Cette adresse ne semble pas valide.",
   trop: "Trop de demandes pour cette adresse. Réessayez dans un quart d'heure.",
 };
@@ -33,7 +52,7 @@ export default async function Connexion({
 }) {
   const { envoye, error, erreur, suite } = await searchParams;
   if (await auth()) redirect(suiteSure(suite));
-  // `error` vient d'Auth.js (lien expiré ou déjà utilisé), `erreur` de notre formulaire.
+  // `error` vient d'Auth.js (lien expiré ou déjà utilisé), `erreur` de nos formulaires.
   const message = erreur ? ERREURS[erreur] : error ? "Ce lien a expiré ou a déjà servi. Demandez-en un nouveau." : null;
 
   return (
@@ -45,18 +64,33 @@ export default async function Connexion({
         </p>
       ) : (
         <>
-          <p>Pas de mot de passe : on vous envoie un lien de connexion par e-mail.</p>
           {message && (
             <p className="message message-erreur" role="alert">
               {message}
             </p>
           )}
-          <form action={demanderLien} className="formulaire">
+          <form action={seConnecter} className="formulaire">
             <input type="hidden" name="suite" value={suiteSure(suite)} />
-            <label htmlFor="email">Adresse e-mail</label>
-            <input id="email" name="email" type="email" required autoComplete="email" maxLength={254} className="champ" />
-            <button type="submit" className="bouton bouton-principal">Recevoir mon lien</button>
+            <label htmlFor="pseudo">Pseudo</label>
+            <input id="pseudo" name="pseudo" required maxLength={20} autoComplete="username" className="champ" />
+            <label htmlFor="motDePasse">Mot de passe</label>
+            <input id="motDePasse" name="motDePasse" type="password" required maxLength={128} autoComplete="current-password" className="champ" />
+            <button type="submit" className="bouton bouton-principal">Se connecter</button>
           </form>
+          <p className="connexion-autre">
+            Pas encore de compte ? <Link href={`/inscription?suite=${encodeURIComponent(suiteSure(suite))}`}>Créer un compte</Link>
+          </p>
+
+          <details className="connexion-mail">
+            <summary>Se connecter par e-mail (ou mot de passe oublié)</summary>
+            <p>Si votre compte a une adresse e-mail validée, on vous envoie un lien de connexion.</p>
+            <form action={demanderLien} className="formulaire">
+              <input type="hidden" name="suite" value={suiteSure(suite)} />
+              <label htmlFor="email">Adresse e-mail</label>
+              <input id="email" name="email" type="email" required autoComplete="email" maxLength={254} className="champ" />
+              <button type="submit" className="bouton">Recevoir mon lien</button>
+            </form>
+          </details>
         </>
       )}
     </section>

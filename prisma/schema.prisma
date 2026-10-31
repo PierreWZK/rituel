@@ -12,8 +12,13 @@ datasource db {
 // Tables d'Auth.js (lien magique). `name` sert de pseudo.
 model User {
   id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
+  name          String?   @unique // le pseudo public
+  /// Facultatif, et toujours vérifié : rempli par le lien magique ou par la confirmation depuis le profil.
+  email         String?   @unique
+  /// Empreinte scrypt « sel:hash » ; vide pour un compte créé par lien magique.
+  motDePasse    String?
+  /// « Afficher mon profil dans le scoreboard » : décoché par défaut.
+  classementPublic Boolean @default(false)
   emailVerified DateTime?
   image         String?
   createdAt     DateTime  @default(now())

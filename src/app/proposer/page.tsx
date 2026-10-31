@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { CATEGORIES, LANGUES, cleUrl, estCategorie, estLangue, slugifier } from "@/lib/jeux";
@@ -10,7 +11,9 @@ export const metadata: Metadata = { title: "Proposer un jeu · Rituel", robots: 
 async function proposer(formData: FormData) {
   "use server";
   const session = await auth();
-  if (!session?.user?.id) redirect("/connexion");
+  if (!session?.user?.id) redirect("/connexion?suite=/proposer");
+  // Seul un e-mail vérifié est enregistré : en avoir un suffit.
+  if (!session.user.email) redirect("/proposer");
 
   const champ = (nom: string) => String(formData.get(nom) ?? "").trim();
   const nom = champ("nom");
@@ -51,8 +54,21 @@ const ERREURS: Record<string, string> = {
 };
 
 export default async function Proposer({ searchParams }: { searchParams: Promise<{ erreur?: string }> }) {
-  if (!(await auth())) redirect("/connexion");
+  const session = await auth();
+  if (!session?.user) redirect("/connexion?suite=/proposer");
   const { erreur } = await searchParams;
+
+  if (!session.user.email) {
+    return (
+      <section className="connexion verre">
+        <h1>Proposer un jeu</h1>
+        <p className="message message-erreur" role="alert">
+          Pour proposer un jeu, ajoutez d'abord votre adresse e-mail et validez-la depuis votre profil.
+        </p>
+        <Link href="/profil#mail" className="bouton bouton-principal">Ajouter mon e-mail</Link>
+      </section>
+    );
+  }
 
   return (
     <section className="connexion verre">

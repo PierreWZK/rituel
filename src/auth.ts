@@ -1,24 +1,19 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import NextAuth from "next-auth";
+import Credentials from "next-auth/providers/credentials";
 import type { EmailConfig } from "next-auth/providers/email";
-import { createTransport } from "nodemailer";
+import { genererCode } from "@/lib/clans";
+import { envoyerMail } from "@/lib/mail";
+import { autoriser } from "@/lib/limite";
+import { verifier } from "@/lib/motdepasse";
 import { prisma } from "@/lib/prisma";
 
 async function envoyerLien({ identifier, url }: { identifier: string; url: string }) {
-  if (!process.env.EMAIL_SERVER && process.env.NODE_ENV !== "production") {
-    console.log(`\n🔗 Lien de connexion pour ${identifier} :\n${url}\n`);
-    return;
-  }
-  // Envoi en arrière-plan : la page « lien envoyé » s'affiche sans attendre le serveur SMTP.
-  // shortcut: un échec d'envoi n'apparaît que dans les journaux, passer par une file d'envoi s'il faut le signaler.
-  createTransport(process.env.EMAIL_SERVER)
-    .sendMail({
-      to: identifier,
-      from: process.env.EMAIL_FROM,
-      subject: "Votre lien de connexion à Rituel",
-      text: `Bonjour,\n\nPour vous connecter à Rituel, ouvrez ce lien (valable 15 minutes) :\n${url}\n\nSi vous n'avez rien demandé, ignorez ce message.`,
-    })
-    .catch((e) => console.error("[mail] lien non envoyé :", e.message));
+  envoyerMail(
+    identifier,
+    "Votre lien de connexion à Rituel",
+    `Bonjour,\n\nPour vous connecter à Rituel, ouvrez ce lien (valable 15 minutes) :\n${url}\n\nSi vous n'avez rien demandé, ignorez ce message.`,
+  );
 }
 
 // Fournisseur e-mail maison : Auth.js n'appelle pas nodemailer lui-même, on utilise la version corrigée installée.
@@ -39,23 +34,48 @@ export function estAdmin(email: string | null | undefined): boolean {
   return admins.includes(email.toLowerCase());
 }
 
+/** Connexion par pseudo (sans tenir compte de la casse) et mot de passe. */
+const pseudoMotDePasse = Credentials({
+  id: "motdepasse",
+  credentials: { pseudo: {}, motDePasse: {} },
+  async authorize(identifiants) {
+    const pseudo = String(identifiants.pseudo ?? "").trim();
+    const mdp = String(identifiants.motDePasse ?? "");
+    if (!pseudo || !mdp || !autoriser(`mdp:${pseudo.toLowerCase()}`, 10, 15 * 60_000)) return null;
+    const user = await prisma.user.findFirst({
+      where: { name: { equals: pseudo, mode: "insensitive" } },
+      select: { id: true, name: true, motDePasse: true },
+    });
+    if (!user?.motDePasse || !(await verifier(mdp, user.motDePasse))) return null;
+    return { id: user.id, name: user.name };
+  },
+});
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   // Derrière le proxy de Coolify (Traefik), l'hôte vient des en-têtes transmis.
   trustHost: true,
-  providers: [lienMagique],
-  pages: { signIn: "/connexion", verifyRequest: "/connexion?envoye=1", error: "/connexion" },
+  // Auth.js n'accepte le mot de passe qu'avec des sessions JWT.
+  session: { strategy: "jwt" },
+  providers: [lienMagique, pseudoMotDePasse],
+  // newUser : à la première connexion par lien magique, on passe par le profil pour choisir son pseudo.
+  pages: { signIn: "/connexion", verifyRequest: "/connexion?envoye=1", error: "/connexion", newUser: "/profil?bienvenue=1" },
   callbacks: {
-    session({ session, user }) {
-      session.user.id = user.id;
+    // Pseudo et e-mail relus en base à chaque requête : un changement de profil se voit tout de suite.
+    async session({ session, token }) {
+      const user = token.sub
+        ? await prisma.user.findUnique({ where: { id: token.sub }, select: { id: true, name: true, email: true } })
+        : null;
+      if (!user) return { ...session, user: undefined } as unknown as typeof session;
+      session.user = { ...session.user, id: user.id, name: user.name, email: user.email ?? "" };
       return session;
     },
   },
   events: {
-    // Pseudo par défaut : la partie avant le @.
+    // Pseudo provisoire, remplacé sur la page de bienvenue : jamais tiré de l'e-mail, qui reste privé.
     async createUser({ user }) {
-      if (user.id && user.email) {
-        await prisma.user.update({ where: { id: user.id }, data: { name: user.email.split("@")[0] } });
+      if (user.id) {
+        await prisma.user.update({ where: { id: user.id }, data: { name: `joueur-${genererCode().toLowerCase()}` } });
       }
     },
   },

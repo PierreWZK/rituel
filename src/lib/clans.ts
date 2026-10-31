@@ -7,20 +7,20 @@ export function genererCode(): string {
   return Array.from({ length: 6 }, () => ALPHABET[randomInt(ALPHABET.length)]).join("");
 }
 
-export const PERIODES = { jour: "Jour", semaine: "Semaine", mois: "Mois" } as const;
-export type Periode = keyof typeof PERIODES;
+// Le général part de 10 parties fictives à 50 points : un bon départ ne suffit pas, la régularité finit par payer.
+const PARTIES_FICTIVES = 10;
+const POINTS_FICTIFS = 50;
+/** En dessous, un joueur n'apparaît pas au classement général. */
+export const PARTIES_MIN = 5;
 
-export function estPeriode(valeur: string): valeur is Periode {
-  return Object.hasOwn(PERIODES, valeur);
+/** Score général : moyenne lissée des points par partie, à un chiffre après la virgule. */
+export function scoreGeneral(total: number, parties: number): number {
+  return Math.round((10 * (total + PARTIES_FICTIVES * POINTS_FICTIFS)) / (parties + PARTIES_FICTIVES)) / 10;
 }
 
-/** Premier jour compté : aujourd'hui, le lundi de la semaine ou le 1er du mois (AAAA-MM-JJ). */
-export function debutPeriode(periode: Periode, aujourdhui: string): string {
-  if (periode === "jour") return aujourdhui;
-  if (periode === "mois") return `${aujourdhui.slice(0, 7)}-01`;
-  const date = new Date(`${aujourdhui}T00:00:00Z`);
-  date.setUTCDate(date.getUTCDate() - ((date.getUTCDay() + 6) % 7));
-  return date.toISOString().slice(0, 10);
+/** Moyenne simple, à un chiffre après la virgule (0 pour une liste vide). */
+export function moyenne(valeurs: number[]): number {
+  return valeurs.length ? Math.round((10 * valeurs.reduce((t, v) => t + v, 0)) / valeurs.length) / 10 : 0;
 }
 
 /** Trie par points décroissants ; les ex aequo partagent le même rang (1, 2, 2, 4). L'ordre d'entrée départage l'affichage. */

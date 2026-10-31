@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { auth } from "@/auth";
-import { CATEGORIES, LANGUES, cleUrl, estCategorie, estLangue, slugifier } from "@/lib/jeux";
+import { auth, estAdmin } from "@/auth";
+import { CATEGORIES, LANGUES, cleUrl, estCategorie, estLangue, lireFormat, slugifier } from "@/lib/jeux";
 import { autoriser } from "@/lib/limite";
+import { envoyerMail } from "@/lib/mail";
+import { FORMATS, formatTemps } from "@/lib/partage";
 import { prisma } from "@/lib/prisma";
+import { ChampsFormat } from "./ChampsFormat";
 
 export const metadata: Metadata = { title: "Proposer un jeu · Rituel", robots: { index: false } };
 
@@ -23,40 +26,60 @@ async function proposer(formData: FormData) {
   const langue = champ("langue");
   const renouvellement = champ("renouvellement") || "à minuit";
   const urlCle = cleUrl(url);
+  const choix = lireFormat(champ);
 
   if (
     nom.length < 2 || nom.length > 60 ||
     !urlCle || url.length > 300 ||
     description.length < 10 || description.length > 280 ||
     !estCategorie(categorie) || !estLangue(langue) ||
-    renouvellement.length > 40
+    renouvellement.length > 40 || !choix
   ) {
     redirect("/proposer?erreur=champs");
   }
 
   const existant = await prisma.game.findUnique({ where: { urlCle } });
-  if (existant) redirect(`/jeux/${existant.slug}?doublon=1`);
+  if (existant) redirect(existant.valide ? `/jeux/${existant.slug}?doublon=1` : "/proposer?erreur=attente");
   if (!autoriser(`proposer:${session.user.id}`, 10, 24 * 3600_000)) redirect("/proposer?erreur=trop");
 
   const base = slugifier(nom);
   let slug = base;
   for (let n = 2; await prisma.game.findUnique({ where: { slug } }); n++) slug = `${base}-${n}`;
 
+  // Un administrateur publie directement ; les autres propositions attendent sa validation.
+  const valide = estAdmin(session.user.email);
   await prisma.game.create({
-    data: { nom, url, urlCle, description, categorie, langue, renouvellement, slug, auteurId: session.user.id },
+    data: { nom, url, urlCle, description, categorie, langue, renouvellement, slug, auteurId: session.user.id, valide, ...choix },
   });
-  redirect(`/jeux/${slug}`);
+  if (valide) redirect(`/jeux/${slug}`);
+
+  const admins = (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim()).filter(Boolean);
+  const site = process.env.AUTH_URL ?? "http://localhost:3000";
+  const detail =
+    choix.format === "TEMPS" && choix.formatMax ? ` · référence ${formatTemps(choix.formatMax)}`
+    : choix.formatMax ? ` · maximum ${choix.formatMax}`
+    : choix.formatAutre ? ` · « ${choix.formatAutre} »`
+    : "";
+  for (const admin of admins) {
+    envoyerMail(
+      admin,
+      `Nouveau jeu proposé : ${nom}`,
+      `${session.user.name} propose « ${nom} » (${url}).\n\n${description}\n\nFormat : ${FORMATS[choix.format]}${detail}\n\nAccepter ou refuser : ${site}/admin`,
+    );
+  }
+  redirect("/proposer?envoye=1");
 }
 
 const ERREURS: Record<string, string> = {
-  champs: "Un champ est incomplet ou trop long. Vérifiez l'adresse (https://…) et la description (10 à 280 caractères).",
+  champs: "Un champ est incomplet ou trop long. Vérifiez l'adresse (https://…), la description (10 à 280 caractères) et le format.",
   trop: "Vous avez déjà proposé 10 jeux aujourd'hui. Revenez demain !",
+  attente: "Ce jeu a déjà été proposé et attend la validation d'un administrateur.",
 };
 
-export default async function Proposer({ searchParams }: { searchParams: Promise<{ erreur?: string }> }) {
+export default async function Proposer({ searchParams }: { searchParams: Promise<{ erreur?: string; envoye?: string }> }) {
   const session = await auth();
   if (!session?.user) redirect("/connexion?suite=/proposer");
-  const { erreur } = await searchParams;
+  const { erreur, envoye } = await searchParams;
 
   if (!session.user.email) {
     return (
@@ -73,7 +96,12 @@ export default async function Proposer({ searchParams }: { searchParams: Promise
   return (
     <section className="connexion verre">
       <h1>Proposer un jeu</h1>
-      <p>Un jeu journalier qui manque ? Il apparaît dans l'annuaire dès que vous l'ajoutez.</p>
+      <p>Un jeu journalier qui manque ? Il apparaît dans l'annuaire dès qu'un administrateur l'a accepté.</p>
+      {envoye && (
+        <p className="message message-ok" role="status">
+          Merci ! Votre proposition est envoyée. Elle apparaîtra dans l'annuaire une fois acceptée.
+        </p>
+      )}
       {erreur && ERREURS[erreur] && (
         <p className="message message-erreur" role="alert">{ERREURS[erreur]}</p>
       )}
@@ -104,7 +132,9 @@ export default async function Proposer({ searchParams }: { searchParams: Promise
         <label htmlFor="renouvellement">Renouvellement</label>
         <input id="renouvellement" name="renouvellement" maxLength={40} placeholder="à minuit" className="champ" />
 
-        <button type="submit" className="bouton bouton-principal">Ajouter à l'annuaire</button>
+        <ChampsFormat />
+
+        <button type="submit" className="bouton bouton-principal">Envoyer la proposition</button>
       </form>
     </section>
   );

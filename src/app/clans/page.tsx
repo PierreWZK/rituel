@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { genererCode } from "@/lib/clans";
+import { epinglerJeuxDuClan } from "@/lib/epingles";
 import { autoriser } from "@/lib/limite";
 import { prisma } from "@/lib/prisma";
 
@@ -39,6 +40,7 @@ async function rejoindre(formData: FormData) {
   if (!clan) redirect("/clans?erreur=code");
   const cle = { clanId_userId: { clanId: clan.id, userId } };
   await prisma.clanMember.upsert({ where: cle, update: {}, create: cle.clanId_userId });
+  await epinglerJeuxDuClan(clan.id, userId);
   redirect(`/clans/${clan.id}`);
 }
 

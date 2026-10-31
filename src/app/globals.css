@@ -491,6 +491,8 @@ button.bouton {
 }
 
 .admin {
+  display: grid;
+  gap: 16px;
   margin-top: 24px;
   padding-top: 20px;
   border-top: 1px solid var(--verre-bord);
@@ -1076,9 +1078,235 @@ select.champ {
   font-family: var(--police-texte);
 }
 
+/* Accueil : étapes illustrées par des exemples */
+.hero .hero-note {
+  margin: 16px 0 0;
+  font-size: 14px;
+  color: var(--sauge);
+}
+
+.section-titre {
+  margin: 0 0 24px;
+  font: 600 28px var(--police-titre);
+  letter-spacing: -0.01em;
+}
+
+.etapes {
+  display: grid;
+  gap: 48px;
+  margin-top: 48px;
+}
+
+.etape {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 40px;
+  align-items: center;
+}
+
+.etape:nth-of-type(even) .etape-texte {
+  order: 2;
+}
+
+.etape-numero {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--menthe);
+  color: var(--nuit);
+  font: 600 16px var(--police-titre);
+}
+
+.etape h3 {
+  margin: 16px 0 10px;
+  font: 600 24px var(--police-titre);
+}
+
+.etape p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--sauge);
+}
+
+.etape p a {
+  color: var(--menthe);
+}
+
+.exemple {
+  margin: 0;
+  padding: 24px;
+}
+
+.exemple .liste-routine {
+  margin-top: 16px;
+}
+
+.exemple .etat {
+  white-space: nowrap;
+}
+
+.exemple .podium {
+  margin: 16px 0 0;
+}
+
+.exemple-partage {
+  margin: 0 0 14px;
+  padding: 14px 16px;
+  border-radius: var(--rayon-s);
+  background: rgb(0 0 0 / 35%);
+  font: 400 14px/1.5 var(--police-mono);
+  white-space: pre-wrap;
+}
+
+.conversions {
+  display: grid;
+  gap: 6px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+  color: var(--sauge);
+}
+
+.conversions li {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.conversions strong {
+  min-width: 56px;
+  color: var(--brume);
+  font-family: var(--police-mono);
+}
+
+.conversions .points {
+  margin-left: auto;
+}
+
+.populaires {
+  margin-top: 64px;
+}
+
+ul.puces {
+  padding: 0;
+  list-style: none;
+}
+
+.puce-detail {
+  margin-left: 6px;
+  font-size: 12px;
+  color: var(--sauge);
+}
+
+.appel {
+  margin-top: 40px;
+  padding: 32px;
+  text-align: center;
+}
+
+.appel h2 {
+  margin: 0 0 8px;
+  font: 600 26px var(--police-titre);
+}
+
+.appel p {
+  margin: 0 0 20px;
+  color: var(--sauge);
+}
+
+.appel .actions {
+  justify-content: center;
+}
+
+/* Administration, jeux du clan, classements */
+.tag-clan {
+  font-size: 11px;
+}
+
+.propositions {
+  display: grid;
+  gap: 16px;
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.proposition p {
+  line-height: 1.6;
+}
+
+.proposition-entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.proposition-entete h2 {
+  margin: 0;
+  font: 600 20px var(--police-titre);
+}
+
+.jeux-clan {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.jeux-clan li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.jeux-clan a {
+  color: var(--brume);
+}
+
+.ajout-jeu {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.ajout-jeu .champ {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+}
+
+.rang-detail {
+  font-size: 13px;
+  color: var(--sauge);
+}
+
+.classement-note {
+  margin-bottom: 16px;
+}
+
+.classement-note a {
+  color: var(--menthe);
+}
+
 @media (max-width: 760px) {
   .briques {
     grid-template-columns: 1fr;
+  }
+
+  .etape {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .etape:nth-of-type(even) .etape-texte {
+    order: 0;
   }
 
   .filtres,

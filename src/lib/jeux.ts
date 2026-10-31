@@ -1,3 +1,33 @@
+import { estFormat, lireTemps, type FormatJeu } from "./partage.ts";
+
+export type ChoixFormat = { format: FormatJeu; formatMax: number | null; formatAutre: string | null };
+
+/**
+ * Lit les champs « format » d'un formulaire (proposition ou correction par l'admin).
+ * ESSAIS : maximum facultatif (1 à 20) ; SCORE : maximum obligatoire ; TEMPS : temps de référence ; AUTRE : description.
+ */
+export function lireFormat(champ: (nom: string) => string): ChoixFormat | null {
+  const format = champ("format");
+  if (!estFormat(format)) return null;
+  const max = champ("formatMax") === "" ? null : Number(champ("formatMax"));
+  if (format === "ESSAIS") {
+    if (max !== null && !(Number.isInteger(max) && max >= 1 && max <= 20)) return null;
+    return { format, formatMax: max, formatAutre: null };
+  }
+  if (format === "SCORE") {
+    return max !== null && Number.isInteger(max) && max >= 1 && max <= 100_000 ? { format, formatMax: max, formatAutre: null } : null;
+  }
+  if (format === "TEMPS") {
+    const reference = lireTemps(champ("formatTemps"));
+    return reference ? { format, formatMax: reference, formatAutre: null } : null;
+  }
+  if (format === "AUTRE") {
+    const description = champ("formatAutre");
+    return description.length >= 3 && description.length <= 120 ? { format, formatMax: null, formatAutre: description } : null;
+  }
+  return { format, formatMax: null, formatAutre: null };
+}
+
 export const CATEGORIES = {
   MOTS: "Mots",
   GEO: "Géo",

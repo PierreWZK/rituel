@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Mono, DM_Sans, Outfit } from "next/font/google";
 import Link from "next/link";
-import { auth, signOut } from "@/auth";
+import { auth, estAdmin, signOut } from "@/auth";
 import { SITE } from "@/lib/seo";
 import "./globals.css";
 
@@ -40,6 +40,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <Link href="/annuaire">Annuaire</Link>
               <Link href="/routine">Ma routine</Link>
               <Link href="/clans">Clans</Link>
+              <Link href="/classement">Classements</Link>
+              {estAdmin(session?.user?.email) && <Link href="/admin">Admin</Link>}
               {session?.user ? (
                 <form action={seDeconnecter} className="session">
                   <Link href="/profil" className="pseudo" title="Mon profil">{session.user.name}</Link>

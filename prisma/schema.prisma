@@ -39,6 +39,7 @@ model Clan {
   fondateurId String
   createdAt   DateTime     @default(now())
   membres     ClanMember[]
+  jeux        ClanGame[]
 }
 
 model ClanMember {
@@ -71,13 +72,39 @@ model Game {
   categorie      Categorie
   langue         String
   renouvellement String    @default("à minuit")
+  // Proposé par un joueur : invisible dans l'annuaire tant qu'un administrateur ne l'a pas accepté.
+  valide         Boolean   @default(false)
+  format         Format    @default(ESSAIS)
+  // ESSAIS : essais possibles (vide = au choix du joueur) ; SCORE : score maximal ; TEMPS : temps de référence en secondes.
+  formatMax      Int?
+  // AUTRE : le format décrit par celui qui propose le jeu.
+  formatAutre    String?
   createdAt      DateTime  @default(now())
   auteurId       String?
   auteur         User?     @relation(fields: [auteurId], references: [id], onDelete: SetNull)
   epingles       Pin[]
   resultats      Result[]
+  clans          ClanGame[]
 
   @@index([categorie])
+}
+
+enum Format {
+  ESSAIS
+  SCORE
+  TEMPS
+  FAIT
+  AUTRE
+}
+
+// Un jeu du clan : épinglé chez chaque membre, et seul compté dans le classement du clan.
+model ClanGame {
+  clanId String
+  gameId String
+  clan   Clan   @relation(fields: [clanId], references: [id], onDelete: Cascade)
+  game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@id([clanId, gameId])
 }
 
 // Un jeu épinglé à la routine d'un joueur.
@@ -101,7 +128,10 @@ model Result {
   // Score déclaré ; reussi vide = jeu coché sans score.
   reussi    Boolean?
   essais    Int?
+  // essaisMax sert aussi de maximum pour un SCORE.
   essaisMax Int?
+  // Score obtenu (SCORE) ou temps en secondes (TEMPS).
+  valeur    Int?
   points    Int      @default(0)
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)

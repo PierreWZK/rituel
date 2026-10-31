@@ -42,7 +42,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <Link href="/clans">Clans</Link>
               {session?.user ? (
                 <form action={seDeconnecter} className="session">
-                  <span className="pseudo">{session.user.name}</span>
+                  <Link href="/profil" className="pseudo" title="Mon profil">{session.user.name}</Link>
                   <button type="submit" className="bouton">Se déconnecter</button>
                 </form>
               ) : (

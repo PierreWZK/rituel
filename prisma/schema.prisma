@@ -12,8 +12,10 @@ datasource db {
 // Tables d'Auth.js (lien magique). `name` sert de pseudo.
 model User {
   id            String    @id @default(cuid())
-  name          String?
+  name          String?   @unique // le pseudo public
   email         String    @unique
+  /// « Afficher mon profil dans le scoreboard » : décoché par défaut.
+  classementPublic Boolean @default(false)
   emailVerified DateTime?
   image         String?
   createdAt     DateTime  @default(now())

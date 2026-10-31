@@ -2,6 +2,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import NextAuth from "next-auth";
 import type { EmailConfig } from "next-auth/providers/email";
 import { createTransport } from "nodemailer";
+import { genererCode } from "@/lib/clans";
 import { prisma } from "@/lib/prisma";
 
 async function envoyerLien({ identifier, url }: { identifier: string; url: string }) {
@@ -44,7 +45,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   // Derrière le proxy de Coolify (Traefik), l'hôte vient des en-têtes transmis.
   trustHost: true,
   providers: [lienMagique],
-  pages: { signIn: "/connexion", verifyRequest: "/connexion?envoye=1", error: "/connexion" },
+  // newUser : à la première connexion, on passe par le profil pour choisir son pseudo.
+  pages: { signIn: "/connexion", verifyRequest: "/connexion?envoye=1", error: "/connexion", newUser: "/profil?bienvenue=1" },
   callbacks: {
     session({ session, user }) {
       session.user.id = user.id;
@@ -52,10 +54,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
   events: {
-    // Pseudo par défaut : la partie avant le @.
+    // Pseudo provisoire, remplacé sur la page de bienvenue : jamais tiré de l'e-mail, qui reste privé.
     async createUser({ user }) {
-      if (user.id && user.email) {
-        await prisma.user.update({ where: { id: user.id }, data: { name: user.email.split("@")[0] } });
+      if (user.id) {
+        await prisma.user.update({ where: { id: user.id }, data: { name: `joueur-${genererCode().toLowerCase()}` } });
       }
     },
   },

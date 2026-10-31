@@ -259,6 +259,25 @@ button.bouton {
   margin-top: 8px;
 }
 
+.formulaire small {
+  color: var(--sauge);
+  font-size: 13px;
+}
+
+.formulaire .option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  cursor: pointer;
+}
+
+.option input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--menthe);
+}
+
 .message {
   padding: 12px 16px;
   border-radius: var(--rayon-s);

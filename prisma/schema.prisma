@@ -13,7 +13,10 @@ datasource db {
 model User {
   id            String    @id @default(cuid())
   name          String?   @unique // le pseudo public
-  email         String    @unique
+  /// Facultatif, et toujours vérifié : rempli par le lien magique ou par la confirmation depuis le profil.
+  email         String?   @unique
+  /// Empreinte scrypt « sel:hash » ; vide pour un compte créé par lien magique.
+  motDePasse    String?
   /// « Afficher mon profil dans le scoreboard » : décoché par défaut.
   classementPublic Boolean @default(false)
   emailVerified DateTime?

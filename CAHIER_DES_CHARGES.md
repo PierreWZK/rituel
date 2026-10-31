@@ -16,7 +16,7 @@ Wordle, Sutom, Framed, Worldle… les jeux quotidiens se comptent par dizaines e
 3. **Comptes** : pseudo et mot de passe, e-mail facultatif (lien magique pour les comptes qui en ont un) ; profil (pseudo, visibilité, e-mail, mot de passe) et série 🔥.
 4. **Ma routine** : on épingle des jeux depuis leur fiche ; chaque jour, une liste à cocher avec la progression et le lien direct vers chaque jeu.
 5. **Résultats** : on colle le texte de partage (ex. `Wordle 1 234 3/6`) et Rituel lit le score ; sinon, saisie manuelle selon le format du jeu (essais, score sur N, temps, fait / pas fait). Un seul résultat par jeu et par jour.
-6. **Clans** : créer un clan, inviter par lien ou code, quitter, **jeux du clan** ; **classement** avec les onglets Jour / Semaine / Mois et les filtres Global / par jeu ; fil des résultats du jour.
+6. **Clans** : créer un clan, inviter par lien ou code, quitter, **jeux du clan** ; **classement** avec les onglets Aujourd'hui (un jeu à la fois) / Général ; fil des résultats du jour.
 7. **Classements publics** : joueurs (sur option dans le profil) et clans (moyenne par membre).
 8. **Validation des jeux** : un jeu proposé attend l'accord d'un administrateur, prévenu par e-mail.
 9. En ligne sur Coolify, avec un README à jour et un aperçu de lien (Open Graph).
@@ -56,7 +56,7 @@ Wordle, Sutom, Framed, Worldle… les jeux quotidiens se comptent par dizaines e
 ### Clans
 
 - Un fondateur, des membres, un code d'invitation régénérable.
-- Classement : onglets **Jour / Semaine / Mois** ; filtres **Global** et un filtre par jeu.
+- Classement : onglet **Aujourd'hui**, un jeu à la fois (les jeux du clan, ou à défaut ceux joués aujourd'hui), et onglet **Général** (voir Classements publics). Au général, les membres sous le minimum de parties apparaissent sans rang.
 - Le fil des résultats affiche les derniers résultats du clan du jour.
 - Le fondateur peut exclure un membre ; un clan vide est supprimé.
 - Un joueur peut appartenir à plusieurs clans.
@@ -64,9 +64,10 @@ Wordle, Sutom, Framed, Worldle… les jeux quotidiens se comptent par dizaines e
 
 ### Classements publics
 
-- `/classement`, visible sans compte, onglets Jour / Semaine / Mois.
+- `/classement`, visible sans compte, onglets **Aujourd'hui** (un jeu à la fois, du plus joué au moins joué) et **Général**.
+- **Score général** : (points des parties + 10 × 50) / (parties + 10), à un chiffre après la virgule. Chacun part de 10 parties fictives à 50 points : 5 parties à 90 donnent 63,3, 10 parties à 89 donnent 69,5. Il faut 5 parties pour apparaître ; les jours sans partie ne comptent pas.
 - **Joueurs** : seulement ceux qui ont coché « Afficher mon profil dans le scoreboard » (décoché par défaut).
-- **Clans** : moyenne des points par membre, sur les jeux du clan s'il en a.
+- **Clans** : au jour, moyenne des membres qui ont joué au jeu ; au général, moyenne des scores généraux des membres classés, sur les jeux du clan s'il en a.
 
 ### Comptes
 
@@ -120,6 +121,7 @@ Elles remplacent la coupe ultra là où elles la contredisent.
 - **Jeux du clan** : liste du fondateur, classement du clan sur ces jeux, ajout non supprimable aux routines.
 - **Classements publics** : joueurs sur option, clans à la moyenne.
 - **Accueil** refait avec des exemples (routine, score collé, podium).
+- **Classements** (même jour, plus tard) : la semaine et le mois disparaissent. Chaque jour, un classement par jeu ; un général en moyenne lissée, pour qu'un nouveau venu puisse rattraper un ancien et que la régularité compte.
 
 ### Charte graphique « Sobre, net, vert menthe » (V1)
 

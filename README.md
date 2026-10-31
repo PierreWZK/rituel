@@ -15,8 +15,8 @@ Wordle, Sutom, Framed, Worldle… les jeux quotidiens se comptent par dizaines. 
 - **Proposer un jeu** (e-mail validé requis) : l'administrateur reçoit un e-mail et l'accepte ou le refuse sur `/admin`.
 - **Ma routine** : on épingle ses jeux, on les coche au fil de la journée, série 🔥.
 - **Résultats** : on colle le texte de partage (`Wordle 1 234 3/6`) ou on saisit son score selon le format du jeu (essais, score sur N, temps, fait / pas fait). Tout est converti en points sur 100.
-- **Clans** : invitation par lien ou code, jeux du clan ajoutés à la routine de chaque membre, classements du jour, de la semaine et du mois, fil des résultats.
-- **Classements publics** : les joueurs qui l'ont choisi dans leur profil, et les clans à la moyenne par membre.
+- **Clans** : invitation par lien ou code, jeux du clan ajoutés à la routine de chaque membre, classement du jour jeu par jeu et classement général, fil des résultats.
+- **Classements publics** : jeu par jeu chaque jour, et un général (moyenne lissée des parties, à partir de 5 parties). Les joueurs qui l'ont choisi dans leur profil, et les clans à la moyenne de leurs membres.
 - **Jeu du jour maison**, « L'intrus du jour », présent dans l'annuaire et compté dans les classements.
 
 ## Lancer en local

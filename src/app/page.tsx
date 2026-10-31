@@ -30,9 +30,9 @@ const ROUTINE = [
 ];
 
 const PODIUM = [
-  { nom: "Hugo", points: 389, rang: "2e" },
-  { nom: "Léa", points: 412, rang: "1re", premier: true },
-  { nom: "Inès", points: 351, rang: "3e" },
+  { nom: "Hugo", points: 82, rang: "2e" },
+  { nom: "Léa", points: 100, rang: "1re", premier: true },
+  { nom: "Inès", points: 64, rang: "3e" },
 ];
 
 const CONVERSIONS = [
@@ -135,13 +135,13 @@ export default async function Accueil() {
             <span className="etape-numero">3</span>
             <h3>Défiez vos amis</h3>
             <p>
-              Créez un clan, partagez le lien d'invitation, choisissez les jeux du clan. Le classement se joue au jour, à
-              la semaine et au mois. Et les clans se mesurent entre eux dans le{" "}
-              <Link href="/classement?vue=clans">classement général</Link>.
+              Créez un clan, partagez le lien d'invitation, choisissez les jeux du clan. Chaque jour, un classement par
+              jeu ; au général, la moyenne de vos parties, où la régularité paie. Et les clans se mesurent entre eux dans
+              les <Link href="/classement?vue=clans">classements publics</Link>.
             </p>
           </div>
-          <figure className="exemple verre" aria-label="Exemple : le podium de la semaine d'un clan, Léa première avec 412 points">
-            <span className="surtitre">Les Matinaux · semaine</span>
+          <figure className="exemple verre" aria-label="Exemple : le podium du jour d'un clan sur Wordle, Léa première avec 100 points">
+            <span className="surtitre">Les Matinaux · Wordle du jour</span>
             <ol className="podium" aria-hidden="true">
               {PODIUM.map((p) => (
                 <li key={p.nom} className={p.premier ? "marche marche-premier verre" : "marche verre"}>

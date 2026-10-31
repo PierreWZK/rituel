@@ -1,17 +1,22 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { classer, debutPeriode, genererCode } from "./clans.ts";
+import { classer, genererCode, moyenne, scoreGeneral } from "./clans.ts";
 
 test("code d'invitation : 6 caractères lisibles", () => {
   for (let i = 0; i < 50; i++) assert.match(genererCode(), /^[A-HJ-NP-Z2-9]{6}$/);
 });
 
-test("début de période", () => {
-  assert.equal(debutPeriode("jour", "2026-10-30"), "2026-10-30");
-  assert.equal(debutPeriode("semaine", "2026-10-30"), "2026-10-26", "un vendredi → le lundi");
-  assert.equal(debutPeriode("semaine", "2026-10-26"), "2026-10-26", "un lundi → lui-même");
-  assert.equal(debutPeriode("semaine", "2026-11-01"), "2026-10-26", "un dimanche → le lundi d'avant");
-  assert.equal(debutPeriode("mois", "2026-10-30"), "2026-10-01");
+test("score général : la régularité passe devant un bon départ", () => {
+  assert.equal(scoreGeneral(5 * 90, 5), 63.3);
+  assert.equal(scoreGeneral(10 * 89, 10), 69.5);
+  assert.ok(scoreGeneral(10 * 89, 10) > scoreGeneral(5 * 90, 5));
+  assert.equal(scoreGeneral(0, 0), 50, "sans partie, on part de 50");
+  assert.ok(Math.abs(scoreGeneral(1000 * 80, 1000) - 80) < 0.5, "à la longue, la vraie moyenne");
+});
+
+test("moyenne", () => {
+  assert.equal(moyenne([]), 0);
+  assert.equal(moyenne([63.3, 69.5]), 66.4);
 });
 
 test("classement : points décroissants, ex aequo au même rang", () => {

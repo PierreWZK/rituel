@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { PERIODES, classer, debutPeriode, estPeriode, genererCode } from "@/lib/clans";
+import { PARTIES_MIN, classer, genererCode, scoreGeneral } from "@/lib/clans";
 import { epinglerPour } from "@/lib/epingles";
 import { jourParis, serie } from "@/lib/jour";
 import { formatScore } from "@/lib/partage";
@@ -12,7 +12,9 @@ import { Inviter } from "./Inviter";
 
 export const metadata: Metadata = { title: "Clan · Rituel", robots: { index: false } };
 
-type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ periode?: string; jeu?: string }> };
+type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ jeu?: string }> };
+
+const GENERAL = "general";
 
 async function moi(): Promise<string> {
   const session = await auth();
@@ -96,29 +98,27 @@ async function retirerJeu(formData: FormData) {
 export default async function PageClan({ params, searchParams }: Props) {
   const userId = await moi();
   const { id } = await params;
-  const { periode: p = "jour", jeu: slugJeu } = await searchParams;
+  const { jeu: slugJeu } = await searchParams;
   const clan = await clanDe(id, userId);
   if (!clan) notFound();
 
-  const periode = estPeriode(p) ? p : "jour";
   const aujourdhui = jourParis();
   const ids = clan.membres.map((m) => m.userId);
-  const dansPeriode = { userId: { in: ids }, jour: { gte: debutPeriode(periode, aujourdhui), lte: aujourdhui } };
   // Avec des jeux du clan, seuls ceux-là comptent ; sans, tous les jeux.
   const idsJeuxClan = clan.jeux.map((j) => j.gameId);
-  const jeuFiltre = slugJeu ? await prisma.game.findUnique({ where: { slug: slugJeu }, select: { id: true } }) : null;
-  const filtreJeux = jeuFiltre ? { gameId: jeuFiltre.id } : idsJeuxClan.length > 0 ? { gameId: { in: idsJeuxClan } } : {};
+  const filtreJeux = idsJeuxClan.length > 0 ? { gameId: { in: idsJeuxClan } } : {};
   const fondateur = clan.fondateurId === userId;
 
-  const [sommes, jeuxJoues, joues, fil, catalogue] = await Promise.all([
-    prisma.result.groupBy({
-      by: ["userId"],
-      where: { ...dansPeriode, ...filtreJeux },
-      _sum: { points: true },
-    }),
+  const [jeuxDuJour, joues, fil, catalogue] = await Promise.all([
     idsJeuxClan.length > 0
-      ? Promise.resolve(clan.jeux.map((j) => ({ game: j.game })))
-      : prisma.result.findMany({ where: dansPeriode, select: { game: { select: { slug: true, nom: true } } }, distinct: ["gameId"] }),
+      ? Promise.resolve(clan.jeux.map((j) => j.game))
+      : prisma.result
+          .findMany({
+            where: { userId: { in: ids }, jour: aujourdhui },
+            select: { game: { select: { id: true, slug: true, nom: true } } },
+            distinct: ["gameId"],
+          })
+          .then((r) => r.map((x) => x.game)),
     prisma.result.findMany({ where: { userId: { in: ids } }, select: { userId: true, jour: true }, distinct: ["userId", "jour"] }),
     prisma.result.findMany({
       where: { userId: { in: ids }, jour: aujourdhui },
@@ -131,27 +131,34 @@ export default async function PageClan({ params, searchParams }: Props) {
       : Promise.resolve([]),
   ]);
 
-  const points = new Map(sommes.map((s) => [s.userId, s._sum.points ?? 0]));
+  const general = slugJeu === GENERAL;
+  const jeu = general ? null : (jeuxDuJour.find((j) => j.slug === slugJeu) ?? jeuxDuJour[0] ?? null);
+  const filtre = general ? filtreJeux : jeu ? { gameId: jeu.id, jour: aujourdhui } : null;
+  const sommes = filtre
+    ? await prisma.result.groupBy({ by: ["userId"], where: { userId: { in: ids }, ...filtre }, _sum: { points: true }, _count: { _all: true } })
+    : [];
+  const parMembre = new Map(sommes.map((s) => [s.userId, { total: s._sum.points ?? 0, parties: s._count._all }]));
   const joursParMembre = new Map<string, string[]>();
   for (const r of joues) joursParMembre.set(r.userId, [...(joursParMembre.get(r.userId) ?? []), r.jour]);
 
-  const classement = classer(
-    clan.membres
-      .map((m) => ({
+  const membres = clan.membres
+    .map((m) => {
+      const { total = 0, parties = 0 } = parMembre.get(m.userId) ?? {};
+      return {
         id: m.userId,
         nom: m.user.name ?? "?",
-        points: points.get(m.userId) ?? 0,
+        parties,
+        points: general ? scoreGeneral(total, parties) : total,
         serie: serie(joursParMembre.get(m.userId) ?? [], aujourdhui),
-      }))
-      .sort((a, b) => a.nom.localeCompare(b.nom, "fr")),
-  );
+      };
+    })
+    .sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
+  // Au général, un membre n'est classé qu'à partir de PARTIES_MIN parties ; les autres suivent, sans rang.
+  const classement = classer(membres.filter((m) => !general || m.parties >= PARTIES_MIN));
+  const lignes = [...classement, ...(general ? membres.filter((m) => m.parties < PARTIES_MIN).map((m) => ({ ...m, rang: 0 })) : [])];
   const podium = [classement[1], classement[0], classement[2]].filter(Boolean);
-  const lien = (changes: { periode?: string; jeu?: string | null }) => {
-    const q = new URLSearchParams({ periode: changes.periode ?? periode });
-    const jeu = changes.jeu === undefined ? slugJeu : changes.jeu;
-    if (jeu) q.set("jeu", jeu);
-    return `/clans/${clan.id}?${q}`;
-  };
+  const lien = (jeu: string) => `/clans/${clan.id}?${new URLSearchParams({ jeu })}`;
+  const nombre = (n: number) => n.toLocaleString("fr-FR");
 
   return (
     <>
@@ -160,59 +167,70 @@ export default async function PageClan({ params, searchParams }: Props) {
           <span className="surtitre">Clan</span>
           <h1 className="titre-page titre-clan">{clan.nom}</h1>
         </div>
-        <nav className="onglets" aria-label="Période">
-          {Object.entries(PERIODES).map(([cle, libelle]) => (
-            <Link key={cle} href={lien({ periode: cle })} className="onglet" aria-current={cle === periode ? "page" : undefined}>
-              {libelle}
-            </Link>
-          ))}
+        <nav className="onglets" aria-label="Classement du jour ou général">
+          <Link href={lien("")} className="onglet" aria-current={general ? undefined : "page"}>Aujourd'hui</Link>
+          <Link href={lien(GENERAL)} className="onglet" aria-current={general ? "page" : undefined}>Général</Link>
         </nav>
       </div>
 
       <div className="clan-grille">
         <div>
-          <nav className="puces" aria-label="Jeu">
-            <Link href={lien({ jeu: null })} className="puce" aria-current={!slugJeu ? "page" : undefined}>Global</Link>
-            {jeuxJoues.map(({ game }) => (
-              <Link key={game.slug} href={lien({ jeu: game.slug })} className="puce" aria-current={slugJeu === game.slug ? "page" : undefined}>
-                {game.nom}
-              </Link>
-            ))}
-          </nav>
+          {jeu && (
+            <nav className="puces" aria-label="Jeu du jour">
+              {jeuxDuJour.map((j) => (
+                <Link key={j.id} href={lien(j.slug)} className="puce" aria-current={j.id === jeu.id ? "page" : undefined}>
+                  {j.nom}
+                </Link>
+              ))}
+            </nav>
+          )}
+          <p className="carte-detail classement-note">
+            {general
+              ? `Moyenne des points par partie, lissée : chacun part de 10 parties fictives à 50 points. Classé à partir de ${PARTIES_MIN} parties${idsJeuxClan.length > 0 ? ", sur les jeux du clan" : ""}.`
+              : jeu
+                ? `Les points du jour sur ${jeu.nom}, sur 100.`
+                : "Personne n'a encore joué aujourd'hui."}
+          </p>
 
-          <ol className="podium" aria-label="Podium">
-            {podium.map((l) => (
-              <li key={l.id} className={l === classement[0] ? "marche marche-premier verre" : "marche verre"}>
-                <span className="avatar" aria-hidden="true">{l.nom.charAt(0).toUpperCase()}</span>
-                <span className="marche-nom">{l.nom}</span>
-                <span className="marche-points">{l.points}</span>
-                <span className="marche-rang">{l.rang === 1 ? "1re" : `${l.rang}e`}</span>
-              </li>
-            ))}
-          </ol>
+          {filtre && (
+            <>
+              <ol className="podium" aria-label="Podium">
+                {podium.map((l) => (
+                  <li key={l.id} className={l === classement[0] ? "marche marche-premier verre" : "marche verre"}>
+                    <span className="avatar" aria-hidden="true">{l.nom.charAt(0).toUpperCase()}</span>
+                    <span className="marche-nom">{l.nom}</span>
+                    <span className="marche-points">{nombre(l.points)}</span>
+                    <span className="marche-rang">{l.rang === 1 ? "1re" : `${l.rang}e`}</span>
+                  </li>
+                ))}
+              </ol>
 
-          <ol className="classement verre" aria-label="Classement">
-            {classement.map((l) => (
-              <li key={l.id} className={l.id === classement[0].id ? "rang rang-premier" : "rang"}>
-                <span className="rang-numero">{l.rang}</span>
-                <span className="avatar" aria-hidden="true">{l.nom.charAt(0).toUpperCase()}</span>
-                <span className="rang-nom">{l.nom}{l.id === userId && " (vous)"}</span>
-                {l.serie > 0 && (
-                  <span className="rang-serie" title={`Série de ${l.serie} jours`}>
-                    <span aria-hidden="true">🔥</span> {l.serie}
-                  </span>
-                )}
-                <span className="rang-points">{l.points}</span>
-                {fondateur && l.id !== userId && (
-                  <form action={exclure}>
-                    <input type="hidden" name="clanId" value={clan.id} />
-                    <input type="hidden" name="userId" value={l.id} />
-                    <button type="submit" className="lien-discret">Exclure</button>
-                  </form>
-                )}
-              </li>
-            ))}
-          </ol>
+              <ol className="classement verre" aria-label="Classement">
+                {lignes.map((l) => (
+                  <li key={l.id} className={l.rang === 1 ? "rang rang-premier" : "rang"}>
+                    <span className="rang-numero">{l.rang || "–"}</span>
+                    <span className="avatar" aria-hidden="true">{l.nom.charAt(0).toUpperCase()}</span>
+                    <span className="rang-nom">{l.nom}{l.id === userId && " (vous)"}</span>
+                    {l.serie > 0 && (
+                      <span className="rang-serie" title={`Série de ${l.serie} jours`}>
+                        <span aria-hidden="true">🔥</span> {l.serie}
+                      </span>
+                    )}
+                    <span className="rang-points">
+                      {l.rang ? nombre(l.points) : <span className="rang-detail">{l.parties}/{PARTIES_MIN} parties</span>}
+                    </span>
+                    {fondateur && l.id !== userId && (
+                      <form action={exclure}>
+                        <input type="hidden" name="clanId" value={clan.id} />
+                        <input type="hidden" name="userId" value={l.id} />
+                        <button type="submit" className="lien-discret">Exclure</button>
+                      </form>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            </>
+          )}
         </div>
 
         <aside className="clan-cote">

@@ -13,25 +13,29 @@ Wordle, Sutom, Framed, Worldle… les jeux quotidiens se comptent par dizaines e
 
 1. **Annuaire** des jeux journaliers : fiche (nom, lien, description, catégorie, langue, heure de renouvellement), recherche et filtres par catégorie et par langue. Une vingtaine de jeux au lancement, dont les jeux du jour des projets du défi.
 2. **Jeu du jour maison, « L'intrus du jour »** : dans l'annuaire comme les autres jeux, et compté dans les classements.
-3. **Comptes** : connexion par lien magique (pas de mot de passe), pseudo et série 🔥.
+3. **Comptes** : pseudo et mot de passe, e-mail facultatif (lien magique pour les comptes qui en ont un) ; profil (pseudo, visibilité, e-mail, mot de passe) et série 🔥.
 4. **Ma routine** : on épingle des jeux depuis leur fiche ; chaque jour, une liste à cocher avec la progression et le lien direct vers chaque jeu.
-5. **Résultats** : on colle le texte de partage (ex. `Wordle 1 234 3/6`) et Rituel lit le score ; sinon, saisie manuelle (réussi ou raté, nombre d'essais). Un seul résultat par jeu et par jour.
-6. **Clans** : créer un clan, inviter par lien ou code, quitter ; **classement** avec les onglets Jour / Semaine / Mois et les filtres Global / par jeu ; fil des résultats du jour.
-7. En ligne sur Coolify, avec un README à jour et un aperçu de lien (Open Graph).
+5. **Résultats** : on colle le texte de partage (ex. `Wordle 1 234 3/6`) et Rituel lit le score ; sinon, saisie manuelle selon le format du jeu (essais, score sur N, temps, fait / pas fait). Un seul résultat par jeu et par jour.
+6. **Clans** : créer un clan, inviter par lien ou code, quitter, **jeux du clan** ; **classement** avec les onglets Jour / Semaine / Mois et les filtres Global / par jeu ; fil des résultats du jour.
+7. **Classements publics** : joueurs (sur option dans le profil) et clans (moyenne par membre).
+8. **Validation des jeux** : un jeu proposé attend l'accord d'un administrateur, prévenu par e-mail.
+9. En ligne sur Coolify, avec un README à jour et un aperçu de lien (Open Graph).
 
 ### Périmètre volontairement limité
 
 - Rituel ne remplace pas les jeux : il renvoie vers eux et ne lit que le texte de partage.
 - Scores déclaratifs : on fait confiance aux joueurs, pas de vérification auprès des jeux.
 - Pas de messagerie ni de temps réel : le fil du clan se met à jour au rechargement.
-- Pas de file de validation : un jeu proposé est publié tout de suite ; l'administrateur peut le retirer.
+- Proposer un jeu demande un e-mail validé ; le reste du site s'utilise sans e-mail.
 
 ## 3. Cahier des charges fonctionnel
 
 ### Annuaire
 
 - Catégories : mots, géographie, chiffres et logique, culture (ciné, musique, jeux vidéo), autres.
-- Un jeu proposé en double (même lien) est refusé avec un renvoi vers la fiche existante.
+- Un jeu proposé en double (même lien) est refusé avec un renvoi vers la fiche existante, ou un message s'il attend encore la validation.
+- **Validation** : une proposition reste invisible (annuaire, sitemap, intrus) jusqu'à son acceptation sur `/admin` ; chaque administrateur de `ADMIN_EMAILS` reçoit un e-mail. Refusée, elle est supprimée ; l'auteur est prévenu dans les deux cas. Un jeu proposé par un administrateur est publié directement.
+- L'administrateur corrige le format d'un jeu depuis sa fiche.
 
 ### Jour et routine
 
@@ -42,7 +46,12 @@ Wordle, Sutom, Framed, Worldle… les jeux quotidiens se comptent par dizaines e
 ### Résultats et points
 
 - Les jeux qui ont un lecteur affichent « Score lu » ; les autres passent par la saisie manuelle.
-- **Points** pour comparer des jeux différents : 0 si raté, sinon de 10 (dernier essai) à 100 (premier essai), proportionnellement au nombre d'essais.
+- **Formats** choisis à la proposition : essais (maximum fixe ou au choix), score sur N, temps (avec un temps de référence), fait / pas fait, et « autre » décrit en texte libre (traité comme fait / pas fait en attendant un format dédié).
+- **Points** sur 100 pour comparer des jeux différents :
+  - essais : 0 si raté, sinon de 10 (dernier essai) à 100 (premier essai) ;
+  - score sur N : score / N × 100 ;
+  - temps : 100 au temps de référence ou mieux, 50 au double ;
+  - fait / pas fait et autre : 50 une fois coché.
 
 ### Clans
 
@@ -51,14 +60,27 @@ Wordle, Sutom, Framed, Worldle… les jeux quotidiens se comptent par dizaines e
 - Le fil des résultats affiche les derniers résultats du clan du jour.
 - Le fondateur peut exclure un membre ; un clan vide est supprimé.
 - Un joueur peut appartenir à plusieurs clans.
+- **Jeux du clan**, choisis par le fondateur : ajoutés à la routine de chaque membre (et des nouveaux), impossibles à retirer tant qu'on est membre ; s'il y en a, seuls ces jeux comptent dans le classement du clan.
+
+### Classements publics
+
+- `/classement`, visible sans compte, onglets Jour / Semaine / Mois.
+- **Joueurs** : seulement ceux qui ont coché « Afficher mon profil dans le scoreboard » (décoché par défaut).
+- **Clans** : moyenne des points par membre, sur les jeux du clan s'il en a.
+
+### Comptes
+
+- Inscription par pseudo (3 à 20 caractères, unique sans tenir compte de la casse) et mot de passe (8 caractères minimum, empreinte scrypt).
+- E-mail facultatif, ajouté depuis le profil et enregistré seulement après clic sur un lien de confirmation (1 h) ; il sert à proposer des jeux et à se connecter par lien (mot de passe oublié).
+- Un compte créé par lien magique choisit son pseudo sur une page de bienvenue.
 
 ## 4. Cahier des charges technique
 
 - Next.js (App Router), Server Actions pour les formulaires, Prisma sur PostgreSQL.
-- Modèles `User`, `Game`, `Pin` (routine), `Result`, `Clan`, `ClanMember`.
+- Modèles `User`, `Game`, `Pin` (routine), `Result`, `Clan`, `ClanMember`, `ClanGame` (jeux du clan).
 - Contrainte d'unicité `(user, game, day)` sur `Result` ; points calculés à l'enregistrement.
-- Lecteurs de partage dans `src/lib/parsers/`, un par jeu, testés avec de vrais textes de partage.
-- Auth.js en lien magique, limite de tentatives sur la connexion.
+- Lecteurs de partage dans `src/lib/partage.ts`, un par jeu, testés avec des textes de partage.
+- Auth.js : mot de passe et lien magique, sessions JWT ; limite de tentatives sur la connexion, l'inscription et l'ajout d'e-mail.
 - Charte appliquée par des variables CSS (couleurs, rayons, verre) : voir la section 8.
 - Mise en ligne sur Coolify à chaque push sur la branche principale.
 
@@ -87,6 +109,17 @@ Le MVP fonctionne, les critères de la section 5 sont cochés, le site est en li
 - **Coupe ultra** : saisie manuelle, un seul compteur de série, pas de file de validation, pas de bonus.
 - **Maquettes** : onglets Jour / Semaine / Mois et conversion en points conservés, comme dans la charte.
 - **Liste de lancement** : à valider avant le premier déploiement.
+
+### Décisions de la V2 (31/10/2026)
+
+Elles remplacent la coupe ultra là où elles la contredisent.
+
+- **Comptes** : pseudo + mot de passe, e-mail facultatif ; un e-mail validé est obligatoire pour proposer un jeu.
+- **Validation** des propositions par l'administrateur, prévenu par e-mail.
+- **Formats** : essais, score sur N, temps, fait / pas fait, autre (texte libre).
+- **Jeux du clan** : liste du fondateur, classement du clan sur ces jeux, ajout non supprimable aux routines.
+- **Classements publics** : joueurs sur option, clans à la moyenne.
+- **Accueil** refait avec des exemples (routine, score collé, podium).
 
 ### Charte graphique « Sobre, net, vert menthe » (V1)
 

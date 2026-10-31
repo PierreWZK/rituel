@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { epinglerJeuxDuClan } from "@/lib/epingles";
 import { prisma } from "@/lib/prisma";
 
 export const metadata: Metadata = { title: "Rejoindre un clan · Rituel", robots: { index: false } };
@@ -14,6 +15,7 @@ async function rejoindre(formData: FormData) {
   if (!session?.user?.id) redirect(`/connexion?suite=/clans/rejoindre/${clan.code}`);
   const cle = { clanId_userId: { clanId: clan.id, userId: session.user.id } };
   await prisma.clanMember.upsert({ where: cle, update: {}, create: cle.clanId_userId });
+  await epinglerJeuxDuClan(clan.id, session.user.id);
   redirect(`/clans/${clan.id}`);
 }
 

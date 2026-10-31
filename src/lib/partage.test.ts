@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { formatScore, lirePartage, points } from "./partage.ts";
+import { formatScore, formatTemps, lirePartage, lireTemps, points, pointsScore, pointsTemps } from "./partage.ts";
 
 const WORDLE = "nytimes.com/games/wordle/index.html";
 
@@ -45,4 +45,30 @@ test("formatScore", () => {
   assert.equal(formatScore({ reussi: true, essais: 3, essaisMax: 6 }), "3/6");
   assert.equal(formatScore({ reussi: false, essais: null, essaisMax: 6 }), "X/6");
   assert.equal(formatScore({ reussi: null, essais: null, essaisMax: null }), "fait");
+  assert.equal(formatScore({ reussi: true, essais: null, essaisMax: 100, valeur: 72 }), "72/100");
+  assert.equal(formatScore({ reussi: true, essais: null, essaisMax: null, valeur: 102 }), "1:42");
+});
+
+test("points d'un score sur N, bornés entre 0 et 100", () => {
+  assert.equal(pointsScore(72, 100), 72);
+  assert.equal(pointsScore(5, 10), 50);
+  assert.equal(pointsScore(150, 100), 100);
+  assert.equal(pointsScore(-3, 100), 0);
+});
+
+test("points d'un temps : 100 au temps de référence ou mieux, 50 au double", () => {
+  assert.equal(pointsTemps(60, 120), 100);
+  assert.equal(pointsTemps(120, 120), 100);
+  assert.equal(pointsTemps(240, 120), 50);
+  assert.equal(pointsTemps(0, 120), 0);
+});
+
+test("lecture et affichage d'un temps", () => {
+  assert.equal(lireTemps("1:42"), 102);
+  assert.equal(lireTemps(" 95 "), 95);
+  assert.equal(lireTemps("1:02:03"), 3723);
+  assert.equal(lireTemps("1:x"), null);
+  assert.equal(lireTemps("0:00"), null);
+  assert.equal(formatTemps(3723), "1:02:03");
+  assert.equal(formatTemps(65), "1:05");
 });

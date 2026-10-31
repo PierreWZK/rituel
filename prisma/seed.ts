@@ -63,7 +63,7 @@ for (const jeu of JEUX) {
   await prisma.game.upsert({
     where: { urlCle },
     update: { ...jeu },
-    create: { ...jeu, urlCle, slug: slugifier(jeu.nom) },
+    create: { ...jeu, urlCle, slug: slugifier(jeu.nom), valide: true },
   });
 }
 

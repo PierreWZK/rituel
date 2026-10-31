@@ -10,12 +10,14 @@ Wordle, Sutom, Framed, Worldle… les jeux quotidiens se comptent par dizaines. 
 
 ## Au programme
 
+- **Comptes** : un pseudo et un mot de passe suffisent ; l'e-mail est facultatif (connexion par lien, mot de passe oublié).
 - **Annuaire** de jeux journaliers : recherche, catégories (mots, géo, chiffres, culture…), langue, heure de renouvellement.
-- **Proposer un jeu** : n'importe quel compte peut en ajouter un, publié après validation.
-- **Ma routine** : on épingle ses jeux, on les coche au fil de la journée, séries 🔥 par jeu et de routine complète.
-- **Résultats** : on colle le texte de partage (`Wordle 1 234 3/6`), Rituel en lit le score et le convertit en points comparables d'un jeu à l'autre.
-- **Clans** : invitation par lien ou code, classements du jour, de la semaine et du mois, global et par jeu, fil des résultats.
-- **Jeu du jour maison**, présent dans l'annuaire et compté dans les classements.
+- **Proposer un jeu** (e-mail validé requis) : l'administrateur reçoit un e-mail et l'accepte ou le refuse sur `/admin`.
+- **Ma routine** : on épingle ses jeux, on les coche au fil de la journée, série 🔥.
+- **Résultats** : on colle le texte de partage (`Wordle 1 234 3/6`) ou on saisit son score selon le format du jeu (essais, score sur N, temps, fait / pas fait). Tout est converti en points sur 100.
+- **Clans** : invitation par lien ou code, jeux du clan ajoutés à la routine de chaque membre, classements du jour, de la semaine et du mois, fil des résultats.
+- **Classements publics** : les joueurs qui l'ont choisi dans leur profil, et les clans à la moyenne par membre.
+- **Jeu du jour maison**, « L'intrus du jour », présent dans l'annuaire et compté dans les classements.
 
 ## Lancer en local
 
@@ -29,7 +31,7 @@ npx prisma migrate dev
 npm run dev                  # http://localhost:3000
 ```
 
-En local, sans `EMAIL_SERVER`, le lien de connexion s'affiche dans le terminal de `npm run dev`.
+En local, sans `EMAIL_SERVER`, les e-mails (lien de connexion, confirmation d'adresse, proposition de jeu) s'affichent dans le terminal de `npm run dev`.
 
 ```bash
 npm test                     # tests unitaires (node --test)
@@ -51,9 +53,10 @@ git push (main) ──► Coolify : nouvelle image (Dockerfile) ──► prisma
 | --- | --- |
 | `DATABASE_URL` | l'URL interne de l'étape 1 |
 | `AUTH_SECRET` | une chaîne aléatoire (`openssl rand -base64 32`) |
-| `EMAIL_SERVER` | le SMTP d'envoi des liens de connexion : `smtp://utilisateur:motdepasse@smtp.exemple.fr:587` |
+| `AUTH_URL` | `https://rituel.projectp.fr` : sans elle, derrière Coolify, les liens des e-mails pointent vers `localhost` |
+| `EMAIL_SERVER` | le SMTP : `smtp://utilisateur:motdepasse@smtp.exemple.fr:587`, ou `smtps://…:465` sur le port 465 |
 | `EMAIL_FROM` | `Rituel <rituel@projectp.fr>` |
-| `ADMIN_EMAILS` | les adresses autorisées à retirer un jeu, séparées par des virgules |
+| `ADMIN_EMAILS` | les administrateurs (valident les jeux, reçoivent les propositions), séparés par des virgules ; leur compte doit avoir cette adresse validée |
 
 4. **Jeux de lancement** : après le premier déploiement, dans le terminal du conteneur, `npx prisma db seed` (une seule fois : relancé, il remettrait les jeux retirés par un administrateur).
 

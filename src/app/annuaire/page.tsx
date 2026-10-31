@@ -17,7 +17,7 @@ export default async function Annuaire({ searchParams }: { searchParams: Promise
   const { q = "", categorie = "", langue = "" } = await searchParams;
   const recherche = q.trim().slice(0, 60);
 
-  const where: Prisma.GameWhereInput = {};
+  const where: Prisma.GameWhereInput = { valide: true };
   if (recherche) {
     where.OR = [
       { nom: { contains: recherche, mode: "insensitive" } },

@@ -1,8 +1,14 @@
 # Rituel · Tous vos jeux du jour, entre amis
 
-> Jour 18 du défi **30 jours, 30 projets** · Next.js · TypeScript · PostgreSQL · **https://rituel.projectp.fr**
+🌐 **[rituel.projectp.fr](https://rituel.projectp.fr/)** · Jour 18 du défi **[30 jours, 30 projets](https://projectp.fr/)** · [Dépôt du défi](https://github.com/PierreWZK/30DaysProjects)
 
-![Rituel, la page d'accueil](docs/preview.png)
+Stack : Next.js, TypeScript, PostgreSQL.
+
+[![Rituel, la page d'accueil](docs/preview-accueil.png)](https://rituel.projectp.fr/)
+
+<p align="center">
+  <img src="docs/preview-mobile.png" alt="Rituel sur téléphone" width="260">
+</p>
 
 Wordle, Sutom, Framed, Worldle… les jeux quotidiens se comptent par dizaines. **Rituel** les réunit dans un annuaire que la communauté enrichit, transforme vos favoris en **routine du jour** à cocher, et vous laisse créer un **clan** pour comparer vos résultats avec vos amis.
 
@@ -71,3 +77,14 @@ Next.js 16 · TypeScript · Prisma 7 · PostgreSQL · Auth.js (lien magique) · 
 - **Indexation** : `robots.txt`, `sitemap.xml`, balise canonical, données structurées JSON-LD (`WebApplication` rattachée à ProjectP) et lien « 30 jours, 30 projets » vers https://projectp.fr/ dans le pied de page. Vérifier en ligne, puis me rappeler de soumettre `https://rituel.projectp.fr/sitemap.xml` dans Google Search Console.
 - **Aperçu du lien** : image Open Graph stylisée 1200 × 630 aux couleurs du projet et balises `og:*` / `twitter:card`, vérifiées en ligne.
 - **Vitrine** : la mise à jour de `30days30projects` (README et `projects.js`) se fait **après ma validation**.
+
+---
+
+## Le défi 30 jours, 30 projets
+
+Un projet complet par jour pendant 30 jours, chacun en ligne sur son propre sous-domaine.
+
+- 🗂️ **Tous les projets** : [projectp.fr](https://projectp.fr/)
+- 💻 **Le dépôt du défi** : [github.com/PierreWZK/30DaysProjects](https://github.com/PierreWZK/30DaysProjects)
+- ⬅️ **Jour précédent** : [BinkTime, tournois de poker](https://binktime.projectp.fr/)
+- ➡️ **Jour suivant** : [Bolduc, listes de cadeaux](https://bolduc.projectp.fr/)
